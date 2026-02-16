@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Notification Tracker</title>
+    
+    <!-- Fonts: Libre Baskerville (Serif) and Inter (Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="app-shell">
+        
+        <!-- 1. TOP BAR -->
+        <header class="top-bar">
+            <div style="font-family: var(--font-serif); font-weight: 700; font-size: 18px;">
+                Job Notification Tracker
+            </div>
+            <div class="text-subtle" style="font-weight: 500;">
+                Step 2 <span style="opacity:0.4">/</span> 5
+            </div>
+            <div class="badge status-progress">In Progress</div>
+        </header>
+
+        <!-- 2. MAIN STAGE (Split View) -->
+        <div class="main-stage">
+            
+            <!-- PRIMARY WORKSPACE (70%) -->
+            <main class="workspace">
+                <!-- Context Header -->
+                <div style="margin-bottom: var(--space-5);">
+                    <h1>Configure Notification Logic</h1>
+                    <p class="text-subtle">Define the rules for when a job alert should be triggered based on keywords and salary ranges.</p>
+                </div>
+
+                <!-- Product Interaction Area -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Keyword Filters</h3>
+                    </div>
+                    
+                    <div style="display: flex; gap: var(--space-2); align-items: flex-end; margin-bottom: var(--space-3);">
+                        <div style="flex-grow: 1;">
+                            <label>Include Keywords</label>
+                            <input type="text" placeholder="e.g. 'Senior Engineer', 'Remote'" style="margin-bottom: 0;">
+                        </div>
+                        <div>
+                            <button class="btn btn-primary">Add Rule</button>
+                        </div>
+                    </div>
+
+                    <!-- Empty State Example -->
+                    <div style="padding: var(--space-5); text-align: center; border: 1px dashed var(--c-border); border-radius: 4px; background: var(--c-bg-subtle);">
+                        <p class="text-subtle" style="margin: 0;">No active rules yet.</p>
+                        <button class="btn btn-secondary btn-sm" style="margin-top: var(--space-2);">Load Templates</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Salary Threshold</h3>
+                    </div>
+                    <div style="display: flex; gap: var(--space-3);">
+                        <div style="flex: 1;">
+                            <label>Minimum (USD)</label>
+                            <input type="text" value="120,000">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Currency</label>
+                            <select>
+                                <option>USD ($)</option>
+                                <option>EUR (€)</option>
+                                <option>GBP (£)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- SECONDARY PANEL (30%) -->
+            <aside class="secondary-panel">
+                <!-- Step Explanation -->
+                <div>
+                    <h3>Guidance</h3>
+                    <p class="text-subtle" style="font-size: 14px; line-height: 1.5;">
+                        Be specific with your keywords to avoid noise. Use boolean logic (AND/OR) if necessary to refine results.
+                    </p>
+                </div>
+
+                <!-- Copyable Prompt Box -->
+                <div class="card" style="background: var(--c-bg); border: none;">
+                    <label>AI Prompt Helper</label>
+                    <div class="text-mono" style="color: var(--c-text); margin-bottom: var(--space-2); font-size: 12px; background: #fff; padding: 8px; border: 1px solid var(--c-border); border-radius: 4px;">
+                        Generate a regex pattern for "Senior Frontend" excluding "Manager" roles.
+                    </div>
+                    <button class="btn btn-secondary btn-sm" style="width: 100%;">Copy Prompt</button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2);">
+                    <button class="btn btn-secondary">Build in Lovable</button>
+                    <div style="display: flex; gap: var(--space-2);">
+                        <button class="btn btn-secondary" style="flex: 1; color: var(--c-success); border-color: var(--c-border);">It Worked</button>
+                        <button class="btn btn-secondary" style="flex: 1; color: var(--c-warning); border-color: var(--c-border);">Error</button>
+                    </div>
+                    <button class="btn btn-secondary" style="border-style: dashed;">+ Add Screenshot</button>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 3. PROOF FOOTER -->
+        <footer class="proof-footer">
+            <div class="checklist-item checked" onclick="this.classList.toggle('checked')">
+                <span class="checklist-box"></span> UI Built
+            </div>
+            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+                <span class="checklist-box"></span> Logic Working
+            </div>
+            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+                <span class="checklist-box"></span> Test Passed
+            </div>
+            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+                <span class="checklist-box"></span> Deployed
+            </div>
+            
+            <div style="margin-left: auto; font-size: 12px;" class="text-subtle">
+                v1.0.0
+            </div>
+        </footer>
+
+    </div>
+
+</body>
+</html>
