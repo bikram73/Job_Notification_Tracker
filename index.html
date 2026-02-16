@@ -18,9 +18,11 @@
         
         <!-- 1. TOP BAR -->
         <header class="top-bar">
-            <div style="font-family: var(--font-serif); font-weight: 700; font-size: 18px;">
-                Job Notification Tracker
-            </div>
+            <a href="#/" style="text-decoration: none; color: var(--c-text);">
+                <div style="font-family: var(--font-serif); font-weight: 700; font-size: 18px;">
+                    Job Notification Tracker
+                </div>
+            </a>
             
             <!-- Desktop Nav -->
             <nav class="nav-links" id="nav-links">
@@ -71,7 +73,7 @@
     <script>
         // --- ROUTER LOGIC ---
         const routes = {
-            '/': 'Dashboard',
+            '/': 'Home',
             '/dashboard': 'Dashboard',
             '/saved': 'Saved Jobs',
             '/digest': 'Daily Digest',
@@ -87,26 +89,151 @@
         function render() {
             // 1. Get Path
             let path = window.location.hash.slice(1) || '/';
-            if (path === '/') path = '/dashboard'; // Default redirect
+            // Removed default redirect to dashboard
 
             // 2. Resolve Title
             const title = routes[path] || 'Not Found';
 
             // 3. Update UI
+            let mainContent = '';
+            let sideContent = '';
+
+            if (path === '/') {
+                mainContent = `
+                    <div style="padding: var(--space-5) 0;">
+                        <h1 style="font-size: 48px; margin-bottom: var(--space-3);">Stop Missing The Right Jobs.</h1>
+                        <p style="font-size: 20px; color: var(--c-text-subtle); margin-bottom: var(--space-5); max-width: 600px;">
+                            Precision-matched job discovery delivered daily at 9AM.
+                        </p>
+                        <a href="#/settings" class="btn btn-primary" style="height: 56px; padding: 0 32px; font-size: 18px;">Start Tracking</a>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card" style="border:none; background: transparent; padding: 0;">
+                        <h3 style="font-size: 16px; color: var(--c-text-subtle);">How it works</h3>
+                        <ul style="list-style: none; padding: 0; margin-top: var(--space-2);">
+                            <li style="margin-bottom: var(--space-2); display: flex; gap: var(--space-2); align-items: center;">
+                                <span style="color: var(--c-accent); font-weight: bold;">01</span> Define your criteria
+                            </li>
+                            <li style="margin-bottom: var(--space-2); display: flex; gap: var(--space-2); align-items: center;">
+                                <span style="color: var(--c-accent); font-weight: bold;">02</span> We scan 50+ boards
+                            </li>
+                            <li style="display: flex; gap: var(--space-2); align-items: center;">
+                                <span style="color: var(--c-accent); font-weight: bold;">03</span> Receive daily digest
+                            </li>
+                        </ul>
+                    </div>
+                `;
+            } else if (path === '/settings') {
+                mainContent = `
+                    <h1>Configuration</h1>
+                    <p class="text-subtle">Customize your job matching algorithm.</p>
+                    
+                    <div class="card">
+                        <div class="card-header"><h3>Preferences</h3></div>
+                        
+                        <label>Role Keywords</label>
+                        <input type="text" placeholder="e.g. Senior Frontend Engineer, React Developer">
+                        
+                        <label>Preferred Locations</label>
+                        <input type="text" placeholder="e.g. Remote, San Francisco, London">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                            <div>
+                                <label>Mode</label>
+                                <select>
+                                    <option>Remote</option>
+                                    <option>Hybrid</option>
+                                    <option>Onsite</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Experience Level</label>
+                                <select>
+                                    <option>Mid-Level</option>
+                                    <option>Senior</option>
+                                    <option>Lead/Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card" style="background: var(--c-bg-subtle); border: none;">
+                        <h3 style="font-size: 14px;">Optimization Tip</h3>
+                        <p class="text-subtle" style="font-size: 13px;">
+                            Broad keywords like "Developer" return too much noise. Be specific with tech stacks.
+                        </p>
+                    </div>
+                `;
+            } else if (path === '/dashboard') {
+                mainContent = `
+                    <h1>Dashboard</h1>
+                    <p class="text-subtle">Your daily overview.</p>
+                    <div class="card" style="padding: var(--space-8); text-align: center; border-style: dashed;">
+                        <div style="font-size: 48px; margin-bottom: var(--space-2);">📭</div>
+                        <h3 style="margin-bottom: var(--space-1);">No jobs yet</h3>
+                        <p class="text-subtle">In the next step, you will load a realistic dataset.</p>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card">
+                        <label>Status</label>
+                        <div class="badge status-progress" style="display: inline-block;">Waiting for Data</div>
+                    </div>
+                `;
+            } else if (path === '/saved') {
+                mainContent = `
+                    <h1>Saved Jobs</h1>
+                    <p class="text-subtle">Opportunities you've bookmarked.</p>
+                    <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
+                        <p class="text-subtle">You haven't saved any jobs yet.</p>
+                        <a href="#/dashboard" class="btn btn-secondary btn-sm" style="margin-top: var(--space-2);">Browse Dashboard</a>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card" style="border: none; opacity: 0.5;">
+                        <label>Export</label>
+                        <button class="btn btn-secondary btn-sm" style="width: 100%;" disabled>Export to CSV</button>
+                    </div>
+                `;
+            } else if (path === '/digest') {
+                mainContent = `
+                    <h1>Daily Digest</h1>
+                    <p class="text-subtle">Past notifications archive.</p>
+                    <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
+                        <p class="text-subtle">No digests generated yet.</p>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card">
+                        <label>Schedule</label>
+                        <p class="text-subtle" style="font-size: 13px;">Daily at 9:00 AM</p>
+                    </div>
+                `;
+            } else {
+                // Proof or Default
+                mainContent = `
+                    <h1>${title}</h1>
+                    <p class="text-subtle">System artifact collection.</p>
+                    <div class="card" style="height: 200px; display: flex; align-items: center; justify-content: center; background: var(--c-bg-subtle); border-style: dashed;">
+                        <span class="text-subtle">Artifact Placeholder</span>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card">
+                        <label>System Status</label>
+                        <div class="badge status-success" style="display: inline-block;">Operational</div>
+                    </div>
+                `;
+            }
+
             appRoot.innerHTML = `
                 <main class="workspace">
-                    <h1>${title}</h1>
-                    <p class="text-subtle">This section will be built in the next step.</p>
-                    
-                    <div class="card" style="margin-top: var(--space-5); height: 240px; display: flex; align-items: center; justify-content: center; background: var(--c-bg-subtle); border-style: dashed;">
-                        <span class="text-subtle">Placeholder Content for ${title}</span>
-                    </div>
+                    ${mainContent}
                 </main>
                 <aside class="secondary-panel">
-                    <div class="card" style="background: var(--c-bg); border: none; opacity: 0.6;">
-                        <label>Context</label>
-                        <p class="text-subtle" style="font-size: 13px;">Tools and settings for ${title} will appear here.</p>
-                    </div>
+                    ${sideContent}
                 </aside>
             `;
 
