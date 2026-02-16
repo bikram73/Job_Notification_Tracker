@@ -70,6 +70,16 @@
 
     </div>
 
+    <!-- MODAL CONTAINER -->
+    <div class="modal-overlay" id="job-modal">
+        <div class="modal-content">
+            <div id="modal-body">
+                <!-- Dynamic Content -->
+            </div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: var(--space-3);" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
     <script>
         // --- ROUTER LOGIC ---
         const routes = {
@@ -85,6 +95,139 @@
         const navLinks = document.querySelectorAll('.nav-item');
         const mobileToggle = document.getElementById('mobile-toggle');
         const navContainer = document.getElementById('nav-links');
+
+        // --- DATA GENERATOR ---
+        const COMPANIES = [
+            "Infosys", "TCS", "Wipro", "Accenture", "Capgemini", "Cognizant", "IBM", "Oracle", "SAP", "Dell",
+            "Amazon", "Flipkart", "Swiggy", "Razorpay", "PhonePe", "Paytm", "Zoho", "Freshworks", "Juspay", "CRED",
+            "Zerodha", "Groww", "Postman", "BrowserStack", "HackerRank", "InMobi", "Ola", "Zomato", "Meesho", "Urban Company"
+        ];
+        
+        const ROLES = [
+            "SDE Intern", "Graduate Engineer Trainee", "Junior Backend Developer", "Frontend Intern", "QA Intern",
+            "Data Analyst Intern", "Java Developer (0-1)", "Python Developer (Fresher)", "React Developer (1-3)", "Full Stack Engineer"
+        ];
+
+        const LOCATIONS = ["Bangalore", "Hyderabad", "Pune", "Gurgaon", "Noida", "Chennai", "Mumbai", "Remote"];
+        const MODES = ["Onsite", "Hybrid", "Remote"];
+        const EXP = ["Fresher", "0-1 Years", "1-3 Years", "3-5 Years"];
+        const SOURCES = ["LinkedIn", "Naukri", "Indeed", "Instahyre"];
+        const SALARIES = ["3–5 LPA", "6–10 LPA", "10–18 LPA", "₹15k–₹40k/month", "₹25k–₹60k/month", "Not Disclosed"];
+
+        function generateJobs(count) {
+            const jobs = [];
+            for(let i=0; i<count; i++) {
+                const company = COMPANIES[Math.floor(Math.random() * COMPANIES.length)];
+                const role = ROLES[Math.floor(Math.random() * ROLES.length)];
+                const daysAgo = Math.floor(Math.random() * 10);
+                
+                jobs.push({
+                    id: `job_${i + 1000}`,
+                    title: role,
+                    company: company,
+                    location: LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)],
+                    mode: MODES[Math.floor(Math.random() * MODES.length)],
+                    experience: EXP[Math.floor(Math.random() * EXP.length)],
+                    skills: ["Java", "Python", "React", "SQL", "AWS"].sort(() => 0.5 - Math.random()).slice(0, 3),
+                    source: SOURCES[Math.floor(Math.random() * SOURCES.length)],
+                    postedDaysAgo: daysAgo,
+                    salaryRange: SALARIES[Math.floor(Math.random() * SALARIES.length)],
+                    applyUrl: "#",
+                    description: `We are looking for a ${role} to join our team at ${company}. You will work on cutting-edge technologies and contribute to scalable systems. This is a great opportunity for someone with ${EXP[Math.floor(Math.random() * EXP.length)]} experience.`
+                });
+            }
+            return jobs.sort((a,b) => a.postedDaysAgo - b.postedDaysAgo);
+        }
+
+        // Initialize Data
+        const ALL_JOBS = generateJobs(60);
+        
+        // --- STATE MANAGEMENT ---
+        let savedJobIds = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+        
+        function toggleSave(id) {
+            if (savedJobIds.includes(id)) {
+                savedJobIds = savedJobIds.filter(jid => jid !== id);
+            } else {
+                savedJobIds.push(id);
+            }
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobIds));
+            render(); // Re-render to update UI
+        }
+
+        function openModal(jobId) {
+            const job = ALL_JOBS.find(j => j.id === jobId);
+            if(!job) return;
+            
+            const modal = document.getElementById('job-modal');
+            const body = document.getElementById('modal-body');
+            
+            body.innerHTML = `
+                <div style="margin-bottom: var(--space-3);">
+                    <div class="badge status-progress" style="display:inline-block; margin-bottom: 8px;">${job.source}</div>
+                    <h2>${job.title}</h2>
+                    <h3 style="font-size: 16px; color: var(--c-text-subtle);">${job.company}</h3>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-bottom: var(--space-3); font-size: 14px;">
+                    <div><strong>Location:</strong> ${job.location} (${job.mode})</div>
+                    <div><strong>Salary:</strong> ${job.salaryRange}</div>
+                    <div><strong>Experience:</strong> ${job.experience}</div>
+                    <div><strong>Posted:</strong> ${job.postedDaysAgo === 0 ? 'Today' : job.postedDaysAgo + ' days ago'}</div>
+                </div>
+
+                <div style="margin-bottom: var(--space-3);">
+                    <label>Skills</label>
+                    <div style="display: flex; gap: 8px;">
+                        ${job.skills.map(s => `<span class="tag">${s}</span>`).join('')}
+                    </div>
+                </div>
+
+                <div style="margin-bottom: var(--space-3);">
+                    <label>Description</label>
+                    <p>${job.description}</p>
+                </div>
+
+                <a href="${job.applyUrl}" target="_blank" class="btn btn-primary" style="width: 100%;">Apply Now</a>
+            `;
+            
+            modal.classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('job-modal').classList.remove('open');
+        }
+
+        // --- RENDER HELPERS ---
+        function createJobCard(job) {
+            const isSaved = savedJobIds.includes(job.id);
+            const isNew = job.postedDaysAgo === 0;
+            
+            return `
+                <div class="card job-card">
+                    <div class="job-header">
+                        <div>
+                            <div style="font-size: 18px; font-family: var(--font-serif); font-weight: 700; color: var(--c-text);">${job.title}</div>
+                            <div style="font-size: 14px; font-weight: 500; color: var(--c-text-subtle); text-transform: uppercase; letter-spacing: 0.05em;">${job.company}</div>
+                        </div>
+                        ${isNew ? '<div class="badge status-new">New</div>' : `<div class="text-subtle" style="font-size: 12px;">${job.postedDaysAgo}d ago</div>`}
+                    </div>
+                    
+                    <div class="job-meta">
+                        <span class="badge" style="font-size: 10px; padding: 2px 6px;">${job.source}</span>
+                        <span>${job.location} (${job.mode})</span>
+                        <span>•</span>
+                        <span>${job.salaryRange}</span>
+                    </div>
+
+                    <div style="display: flex; gap: var(--space-2); margin-top: var(--space-1);">
+                        <button class="btn btn-secondary btn-sm" onclick="openModal('${job.id}')">View Details</button>
+                        <a href="${job.applyUrl}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Apply</a>
+                        <button class="btn btn-secondary btn-sm" onclick="toggleSave('${job.id}')" style="${isSaved ? 'border-color: var(--c-accent); color: var(--c-accent);' : ''}">${isSaved ? 'Saved' : 'Save'}</button>
+                    </div>
+                </div>
+            `;
+        }
 
         function render() {
             // 1. Get Path
@@ -168,13 +311,42 @@
                 `;
             } else if (path === '/dashboard') {
                 mainContent = `
-                    <h1>Dashboard</h1>
-                    <p class="text-subtle">Your daily overview.</p>
-                    <div class="card" style="padding: var(--space-8); text-align: center; border-style: dashed;">
-                        <div style="font-size: 48px; margin-bottom: var(--space-2);">📭</div>
-                        <h3 style="margin-bottom: var(--space-1);">No jobs yet</h3>
-                        <p class="text-subtle">In the next step, you will load a realistic dataset.</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-2);">
+                        <h1>Dashboard</h1>
+                        <div class="text-subtle">${ALL_JOBS.length} Jobs Found</div>
                     </div>
+                    
+                    <!-- FILTER BAR -->
+                    <div class="filter-bar">
+                        <input type="text" placeholder="Search role or company..." id="filter-search">
+                        <select id="filter-loc">
+                            <option value="">All Locations</option>
+                            ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
+                        </select>
+                        <select id="filter-exp">
+                            <option value="">Experience</option>
+                            ${EXP.map(e => `<option>${e}</option>`).join('')}
+                        </select>
+                        <select id="filter-mode">
+                            <option value="">Mode</option>
+                            ${MODES.map(m => `<option>${m}</option>`).join('')}
+                        </select>
+                        <select id="filter-source">
+                            <option value="">Source</option>
+                            ${SOURCES.map(s => `<option>${s}</option>`).join('')}
+                        </select>
+                        <select id="filter-sort">
+                            <option value="newest">Newest First</option>
+                            <option value="salary">Salary High-Low</option>
+                        </select>
+                    </div>
+
+                    <div id="job-list-container">
+                        ${ALL_JOBS.map(job => createJobCard(job)).join('')}
+                    </div>
+                    
+                    <!-- Load More (Visual Only) -->
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: var(--space-3);">Load More Jobs</button>
                 `;
                 sideContent = `
                     <div class="card">
@@ -183,13 +355,17 @@
                     </div>
                 `;
             } else if (path === '/saved') {
+                const savedJobs = ALL_JOBS.filter(j => savedJobIds.includes(j.id));
+                
                 mainContent = `
                     <h1>Saved Jobs</h1>
-                    <p class="text-subtle">Opportunities you've bookmarked.</p>
-                    <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
-                        <p class="text-subtle">You haven't saved any jobs yet.</p>
-                        <a href="#/dashboard" class="btn btn-secondary btn-sm" style="margin-top: var(--space-2);">Browse Dashboard</a>
-                    </div>
+                    <p class="text-subtle">You have saved ${savedJobs.length} opportunities.</p>
+                    
+                    ${savedJobs.length === 0 ? `
+                        <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
+                            <p class="text-subtle">No saved jobs yet.</p>
+                            <a href="#/dashboard" class="btn btn-secondary btn-sm" style="margin-top: var(--space-2);">Browse Dashboard</a>
+                        </div>` : savedJobs.map(job => createJobCard(job)).join('')}
                 `;
                 sideContent = `
                     <div class="card" style="border: none; opacity: 0.5;">
@@ -258,6 +434,33 @@
         mobileToggle.addEventListener('click', () => {
             navContainer.classList.toggle('open');
         });
+
+            // --- FILTER LOGIC (Event Delegation) ---
+            document.addEventListener('input', (e) => {
+                if(e.target.id === 'filter-search' || e.target.tagName === 'SELECT') {
+                    if(!document.getElementById('job-list-container')) return;
+                    
+                    const search = document.getElementById('filter-search')?.value.toLowerCase() || '';
+                    const loc = document.getElementById('filter-loc')?.value || '';
+                    const exp = document.getElementById('filter-exp')?.value || '';
+                    const mode = document.getElementById('filter-mode')?.value || '';
+                    const source = document.getElementById('filter-source')?.value || '';
+                    
+                    const filtered = ALL_JOBS.filter(job => {
+                        const matchesSearch = job.title.toLowerCase().includes(search) || job.company.toLowerCase().includes(search);
+                        const matchesLoc = loc ? job.location === loc : true;
+                        const matchesExp = exp ? job.experience === exp : true;
+                        const matchesMode = mode ? job.mode === mode : true;
+                        const matchesSource = source ? job.source === source : true;
+                        return matchesSearch && matchesLoc && matchesExp && matchesMode && matchesSource;
+                    });
+
+                    document.getElementById('job-list-container').innerHTML = 
+                        filtered.length > 0 
+                        ? filtered.map(job => createJobCard(job)).join('') 
+                        : `<div class="card" style="text-align:center; padding: var(--space-5);"><p class="text-subtle">No jobs match your filters.</p></div>`;
+                }
+            });
     </script>
 </body>
 </html>
