@@ -543,3 +543,61 @@ input[type=range]::-webkit-slider-runnable-track {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* --- TEST CHECKLIST SPECIFIC --- */
+.test-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.test-summary {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  padding: var(--space-3);
+  border-radius: var(--radius-std);
+  margin-bottom: var(--space-3);
+  text-align: center;
+}
+.test-item {
+  background: #fff;
+  border: 1px solid var(--c-border);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-std);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  transition: var(--transition-std);
+}
+.test-item:hover {
+  border-color: var(--c-border-hover);
+}
+.test-item.passed {
+  border-left: 4px solid var(--c-success);
+}
+.test-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-top: 2px;
+  accent-color: var(--c-success);
+}
+.test-content {
+  display: flex;
+  flex-direction: column;
+}
+.test-label {
+  font-weight: 500;
+  color: var(--c-text);
+}
+.test-tooltip {
+  font-size: 13px;
+  color: var(--c-text-subtle);
+}
+.locked-state {
+  text-align: center;
+  padding: var(--space-8);
+  background: var(--c-bg-subtle);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-std);
+  margin: var(--space-5);
+}

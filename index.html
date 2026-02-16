@@ -91,7 +91,9 @@
             '/saved': 'Saved Jobs',
             '/digest': 'Daily Digest',
             '/settings': 'Settings',
-            '/proof': 'Proof & Status'
+            '/proof': 'Proof & Status',
+            '/jt/07-test': 'System Test Checklist',
+            '/jt/08-ship': 'Ready to Ship'
         };
 
         const appRoot = document.getElementById('app-root');
@@ -150,6 +152,7 @@
         let preferences = JSON.parse(localStorage.getItem('jobTrackerPreferences') || 'null');
         let jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
         let statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
+        let testStatus = JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
         
         function toggleSave(id) {
             if (savedJobIds.includes(id)) {
@@ -187,6 +190,34 @@
             // We use a slight timeout or direct DOM update to avoid full re-render flicker if possible,
             // but for this architecture, render() is safest.
             render();
+        }
+
+        // --- TEST CHECKLIST LOGIC ---
+        const TEST_ITEMS = [
+            { id: 't1', label: 'Preferences persist after refresh', tip: 'Change settings, reload page, verify values.' },
+            { id: 't2', label: 'Match score calculates correctly', tip: 'Check if job score updates based on keywords.' },
+            { id: 't3', label: '"Show only matches" toggle works', tip: 'Enable toggle, ensure low score jobs disappear.' },
+            { id: 't4', label: 'Save job persists after refresh', tip: 'Save a job, reload, check Saved tab.' },
+            { id: 't5', label: 'Apply opens in new tab', tip: 'Click Apply, verify target="_blank".' },
+            { id: 't6', label: 'Status update persists after refresh', tip: 'Change status to Applied, reload, verify.' },
+            { id: 't7', label: 'Status filter works correctly', tip: 'Filter by "Applied", verify list.' },
+            { id: 't8', label: 'Digest generates top 10 by score', tip: 'Generate digest, count items, check sorting.' },
+            { id: 't9', label: 'Digest persists for the day', tip: 'Reload page, ensure digest remains.' },
+            { id: 't10', label: 'No console errors on main pages', tip: 'Open DevTools, navigate routes, check console.' }
+        ];
+
+        function toggleTest(id) {
+            testStatus[id] = !testStatus[id];
+            localStorage.setItem('jobTrackerTestStatus', JSON.stringify(testStatus));
+            render();
+        }
+
+        function resetTests() {
+            if(confirm('Reset all test status?')) {
+                testStatus = {};
+                localStorage.setItem('jobTrackerTestStatus', JSON.stringify(testStatus));
+                render();
+            }
         }
 
         function savePreferences() {
@@ -414,6 +445,7 @@
             preferences = JSON.parse(localStorage.getItem('jobTrackerPreferences') || 'null');
             jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
             statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
+            testStatus = JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
 
             // 2. Resolve Title
             const title = routes[path] || 'Not Found';
@@ -690,6 +722,70 @@
                         </div>
                     `;
                 }
+            } else if (path === '/jt/07-test') {
+                const passedCount = TEST_ITEMS.filter(t => testStatus[t.id]).length;
+                const total = TEST_ITEMS.length;
+                const isComplete = passedCount === total;
+
+                mainContent = `
+                    <div class="test-container">
+                        <h1>System Test Checklist</h1>
+                        <p class="text-subtle">Verify all functionality before shipping.</p>
+
+                        <div class="test-summary" style="border-color: ${isComplete ? 'var(--c-success)' : 'var(--c-border)'};">
+                            <h3 style="margin-bottom: 4px; color: ${isComplete ? 'var(--c-success)' : 'var(--c-text)'};">Tests Passed: ${passedCount} / ${total}</h3>
+                            ${!isComplete ? '<p class="text-subtle" style="margin:0; font-size:13px; color: var(--c-warning);">Resolve all issues before shipping.</p>' : '<p class="text-subtle" style="margin:0; font-size:13px; color: var(--c-success);">All systems go.</p>'}
+                        </div>
+
+                        <div>
+                            ${TEST_ITEMS.map(item => `
+                                <div class="test-item ${testStatus[item.id] ? 'passed' : ''}" onclick="toggleTest('${item.id}')">
+                                    <input type="checkbox" class="test-checkbox" ${testStatus[item.id] ? 'checked' : ''} readonly>
+                                    <div class="test-content">
+                                        <span class="test-label">${item.label}</span>
+                                        <span class="test-tooltip">${item.tip}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div style="margin-top: var(--space-5); text-align: center;">
+                            ${isComplete ? `<a href="#/jt/08-ship" class="btn btn-primary">Proceed to Ship &rarr;</a>` : ''}
+                            <button class="btn btn-secondary btn-sm" onclick="resetTests()" style="margin-top: var(--space-2);">Reset Test Status</button>
+                        </div>
+                    </div>
+                `;
+                sideContent = `
+                    <div class="card">
+                        <label>Status</label>
+                        <div class="badge ${isComplete ? 'status-success' : 'status-progress'}">${isComplete ? 'Ready' : 'Testing'}</div>
+                    </div>
+                `;
+            } else if (path === '/jt/08-ship') {
+                const passedCount = TEST_ITEMS.filter(t => testStatus[t.id]).length;
+                const isLocked = passedCount < TEST_ITEMS.length;
+
+                if (isLocked) {
+                    mainContent = `
+                        <div class="locked-state">
+                            <div style="font-size: 48px; margin-bottom: var(--space-2);">🔒</div>
+                            <h2>Shipment Locked</h2>
+                            <p class="text-subtle">You must pass all ${TEST_ITEMS.length} tests before accessing this screen.</p>
+                            <a href="#/jt/07-test" class="btn btn-primary" style="margin-top: var(--space-2);">Go to Checklist</a>
+                        </div>
+                    `;
+                } else {
+                    mainContent = `
+                        <h1>Ready to Ship</h1>
+                        <p class="text-subtle">All systems operational.</p>
+                        <div class="card" style="padding: var(--space-8); text-align: center; background: var(--c-bg-subtle);">
+                            <h2>🚀</h2>
+                            <h3>Job Notification Tracker v1.0</h3>
+                            <p class="text-subtle">Ready for deployment.</p>
+                        </div>
+                    `;
+                }
+                sideContent = `<div class="card"><label>Version</label><div class="text-subtle">1.0.0</div></div>`;
             } else {
                 // Proof or Default
                 mainContent = `
