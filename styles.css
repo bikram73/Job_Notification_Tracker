@@ -480,3 +480,25 @@ input[type=range]::-webkit-slider-runnable-track {
   max-height: 90vh;
   overflow-y: auto;
 }
+
+/* --- DIGEST SPECIFIC --- */
+.digest-container {
+  max-width: 640px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border: 1px solid var(--c-border);
+  padding: var(--space-5);
+  border-radius: var(--radius-std);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.digest-header {
+  text-align: center;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.digest-item {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.digest-item:last-child { border-bottom: none; }

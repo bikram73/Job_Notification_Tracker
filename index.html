@@ -211,6 +211,69 @@
             return 'badge-score-low';
         }
 
+        // --- DIGEST LOGIC ---
+        function getDigestKey() {
+            // Use local date components to match the UI header (toLocaleDateString)
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `jobTrackerDigest_${year}-${month}-${day}`;
+        }
+
+        function generateDigest() {
+            if (!preferences) return;
+            
+            // 1. Score all jobs
+            const scoredJobs = ALL_JOBS.map(job => ({
+                ...job,
+                score: calculateMatchScore(job)
+            }));
+
+            // 2. Filter & Sort (Score DESC, Date ASC)
+            // Only include jobs with score > 0 to avoid complete junk
+            const digestJobs = scoredJobs
+                .filter(j => j.score > 0)
+                .sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return a.postedDaysAgo - b.postedDaysAgo;
+                })
+                .slice(0, 10); // Top 10
+
+            // 3. Save
+            localStorage.setItem(getDigestKey(), JSON.stringify(digestJobs));
+            render();
+        }
+
+        function copyDigest() {
+            const jobs = JSON.parse(localStorage.getItem(getDigestKey()) || '[]');
+            if (!jobs.length) return;
+
+            let text = `My 9AM Job Digest - ${new Date().toLocaleDateString()}\n\n`;
+            jobs.forEach((job, i) => {
+                text += `${i+1}. ${job.title} at ${job.company}\n`;
+                text += `   Match: ${job.score}% | ${job.location}\n`;
+                text += `   Apply: ${job.applyUrl}\n\n`;
+            });
+            
+            navigator.clipboard.writeText(text);
+            alert('Digest copied to clipboard!');
+        }
+
+        function emailDigest() {
+            const jobs = JSON.parse(localStorage.getItem(getDigestKey()) || '[]');
+            if (!jobs.length) return;
+
+            let body = `Here is my daily job digest:\n\n`;
+            jobs.forEach((job, i) => {
+                body += `${i+1}. ${job.title} at ${job.company} (${job.score}% Match)\n`;
+                body += `${job.applyUrl}\n\n`;
+            });
+
+            const subject = encodeURIComponent(`My 9AM Job Digest - ${new Date().toLocaleDateString()}`);
+            window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+        }
+
         function openModal(jobId) {
             const job = ALL_JOBS.find(j => j.id === jobId);
             if(!job) return;
@@ -469,19 +532,83 @@
                     </div>
                 `;
             } else if (path === '/digest') {
-                mainContent = `
-                    <h1>Daily Digest</h1>
-                    <p class="text-subtle">Past notifications archive.</p>
-                    <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
-                        <p class="text-subtle">No digests generated yet.</p>
-                    </div>
-                `;
-                sideContent = `
-                    <div class="card">
-                        <label>Schedule</label>
-                        <p class="text-subtle" style="font-size: 13px;">Daily at 9:00 AM</p>
-                    </div>
-                `;
+                const digestKey = getDigestKey();
+                const storedDigest = JSON.parse(localStorage.getItem(digestKey));
+
+                if (!preferences) {
+                    mainContent = `
+                        <h1>Daily Digest</h1>
+                        <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
+                            <h3 style="margin-bottom: var(--space-2);">Personalization Required</h3>
+                            <p class="text-subtle">Set your preferences to generate a personalized digest.</p>
+                            <a href="#/settings" class="btn btn-primary" style="margin-top: var(--space-2);">Go to Settings</a>
+                        </div>
+                    `;
+                    sideContent = `<div class="card"><p class="text-subtle">Configure settings to enable the digest engine.</p></div>`;
+                } else if (!storedDigest) {
+                    mainContent = `
+                        <h1>Daily Digest</h1>
+                        <p class="text-subtle">Your personalized morning briefing.</p>
+                        <div class="card" style="padding: var(--space-8); text-align: center; border-style: dashed;">
+                            <div style="font-size: 48px; margin-bottom: var(--space-2);">☕</div>
+                            <h3 style="margin-bottom: var(--space-2);">Ready to generate</h3>
+                            <p class="text-subtle" style="margin-bottom: var(--space-3);">
+                                We've found potential matches based on your criteria.<br>
+                                <span style="font-size: 12px; opacity: 0.7;">Demo Mode: Daily 9AM trigger simulated manually.</span>
+                            </p>
+                            <button class="btn btn-primary" onclick="generateDigest()">Generate Today's 9AM Digest (Simulated)</button>
+                        </div>
+                    `;
+                    sideContent = `
+                        <div class="card">
+                            <label>Schedule</label>
+                            <p class="text-subtle" style="font-size: 13px;">Daily at 9:00 AM</p>
+                        </div>
+                    `;
+                } else {
+                    // RENDER DIGEST UI
+                    const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    
+                    const digestHTML = storedDigest.length === 0 
+                        ? `<div style="text-align: center; padding: 40px;">No matching roles today. Check again tomorrow.</div>`
+                        : storedDigest.map(job => `
+                            <div class="digest-item">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                    <div style="font-family: var(--font-serif); font-weight: 700; font-size: 16px; color: var(--c-text);">${job.title}</div>
+                                    <div class="badge ${getScoreBadgeClass(job.score)}">${job.score}%</div>
+                                </div>
+                                <div style="font-size: 14px; color: var(--c-text); margin-bottom: 4px;">${job.company} • ${job.location}</div>
+                                <div style="font-size: 13px; color: var(--c-text-subtle); margin-bottom: 8px;">${job.experience} • ${job.salaryRange}</div>
+                                <a href="${job.applyUrl}" target="_blank" style="font-size: 13px; color: var(--c-accent); text-decoration: none; font-weight: 500;">Apply Now &rarr;</a>
+                            </div>
+                        `).join('');
+
+                    mainContent = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+                            <h1>Daily Digest</h1>
+                            <div class="badge status-success">Generated</div>
+                        </div>
+                        
+                        <div class="digest-container">
+                            <div class="digest-header">
+                                <h2 style="font-size: 20px; margin-bottom: 4px;">Top 10 Jobs For You</h2>
+                                <div class="text-subtle">${dateStr}</div>
+                            </div>
+                            ${digestHTML}
+                            <div class="digest-footer">
+                                This digest was generated based on your preferences.
+                            </div>
+                        </div>
+                    `;
+                    
+                    sideContent = `
+                        <div class="card">
+                            <label>Actions</label>
+                            <button class="btn btn-secondary" style="width: 100%; margin-bottom: var(--space-2);" onclick="copyDigest()">Copy to Clipboard</button>
+                            <button class="btn btn-secondary" style="width: 100%;" onclick="emailDigest()">Create Email Draft</button>
+                        </div>
+                    `;
+                }
             } else {
                 // Proof or Default
                 mainContent = `
