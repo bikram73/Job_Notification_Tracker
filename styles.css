@@ -601,3 +601,43 @@ input[type=range]::-webkit-slider-runnable-track {
   border-radius: var(--radius-std);
   margin: var(--space-5);
 }
+
+/* --- PROOF & SHIP SPECIFIC --- */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-std);
+  font-size: 14px;
+}
+.step-item.done {
+  border-left: 4px solid var(--c-success);
+}
+.step-status {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.step-status.done { color: var(--c-success); }
+.step-status.pending { color: var(--c-text-subtle); }
+
+.shipped-message {
+  background-color: rgba(74, 107, 74, 0.1);
+  color: var(--c-success);
+  border: 1px solid var(--c-success);
+  padding: var(--space-3);
+  border-radius: var(--radius-std);
+  text-align: center;
+  margin-bottom: var(--space-3);
+  font-weight: 600;
+}

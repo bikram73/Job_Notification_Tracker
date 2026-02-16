@@ -30,7 +30,7 @@
                 <a href="#/saved" class="nav-item" data-link>Saved</a>
                 <a href="#/digest" class="nav-item" data-link>Digest</a>
                 <a href="#/settings" class="nav-item" data-link>Settings</a>
-                <a href="#/proof" class="nav-item" data-link>Proof</a>
+                <a href="#/jt/proof" class="nav-item" data-link>Proof</a>
             </nav>
 
             <!-- Mobile Toggle -->
@@ -91,7 +91,8 @@
             '/saved': 'Saved Jobs',
             '/digest': 'Daily Digest',
             '/settings': 'Settings',
-            '/proof': 'Proof & Status',
+            '/proof': 'Proof & Status', /* Legacy route support */
+            '/jt/proof': 'Final Proof & Submission',
             '/jt/07-test': 'System Test Checklist',
             '/jt/08-ship': 'Ready to Ship'
         };
@@ -153,6 +154,7 @@
         let jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
         let statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
         let testStatus = JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
+        let artifacts = JSON.parse(localStorage.getItem('jobTrackerArtifacts') || '{"lovable":"","github":"","deploy":""}');
         
         function toggleSave(id) {
             if (savedJobIds.includes(id)) {
@@ -218,6 +220,36 @@
                 localStorage.setItem('jobTrackerTestStatus', JSON.stringify(testStatus));
                 render();
             }
+        }
+
+        function updateArtifact(key, value) {
+            artifacts[key] = value;
+            localStorage.setItem('jobTrackerArtifacts', JSON.stringify(artifacts));
+            render();
+        }
+
+        function copySubmission() {
+            const text = `------------------------------------------
+Job Notification Tracker — Final Submission
+
+Lovable Project:
+${artifacts.lovable || '[Missing Link]'}
+
+GitHub Repository:
+${artifacts.github || '[Missing Link]'}
+
+Live Deployment:
+${artifacts.deploy || '[Missing Link]'}
+
+Core Features:
+- Intelligent match scoring
+- Daily digest simulation
+- Status tracking
+- Test checklist enforced
+------------------------------------------`;
+            
+            navigator.clipboard.writeText(text);
+            alert('Final submission copied to clipboard.');
         }
 
         function savePreferences() {
@@ -446,6 +478,7 @@
             jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
             statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
             testStatus = JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
+            artifacts = JSON.parse(localStorage.getItem('jobTrackerArtifacts') || '{"lovable":"","github":"","deploy":""}');
 
             // 2. Resolve Title
             const title = routes[path] || 'Not Found';
@@ -453,6 +486,29 @@
             // 3. Update UI
             let mainContent = '';
             let sideContent = '';
+
+            // --- GLOBAL STATUS LOGIC ---
+            const testsPassedCount = TEST_ITEMS.filter(t => testStatus[t.id]).length;
+            const allTestsPassed = testsPassedCount === TEST_ITEMS.length;
+            const allArtifactsFilled = artifacts.lovable && artifacts.github && artifacts.deploy;
+            const isShipped = allTestsPassed && allArtifactsFilled;
+
+            // Update Top Bar Badge (if exists, or inject it)
+            // We need to find the badge in the header. It doesn't have an ID in the original HTML, 
+            // so we'll select it by class or structure.
+            const headerBadge = document.querySelector('.top-bar .badge');
+            if (headerBadge) {
+                if (isShipped) {
+                    headerBadge.className = 'badge status-success';
+                    headerBadge.innerText = 'Shipped';
+                } else if (testsPassedCount > 0 || Object.values(artifacts).some(v => v)) {
+                    headerBadge.className = 'badge status-progress';
+                    headerBadge.innerText = 'In Progress';
+                } else {
+                    headerBadge.className = 'badge';
+                    headerBadge.innerText = 'Not Started';
+                }
+            }
 
             if (path === '/') {
                 mainContent = `
@@ -786,6 +842,64 @@
                     `;
                 }
                 sideContent = `<div class="card"><label>Version</label><div class="text-subtle">1.0.0</div></div>`;
+            } else if (path === '/jt/proof' || path === '/proof') {
+                const steps = [
+                    { label: 'Project Setup', done: true },
+                    { label: 'Routing System', done: true },
+                    { label: 'Data Engine', done: ALL_JOBS.length > 0 },
+                    { label: 'Preference Logic', done: !!preferences },
+                    { label: 'Digest Engine', done: !!localStorage.getItem(getDigestKey()) || !!preferences },
+                    { label: 'Status Tracking', done: Object.keys(jobStatuses).length > 0 },
+                    { label: 'System Testing', done: allTestsPassed },
+                    { label: 'Final Shipment', done: isShipped }
+                ];
+
+                mainContent = `
+                    <h1>Final Proof & Submission</h1>
+                    <p class="text-subtle">Project 1 — Job Notification Tracker</p>
+
+                    ${isShipped ? `<div class="shipped-message">Project 1 Shipped Successfully.</div>` : ''}
+
+                    <div class="card">
+                        <div class="card-header"><h3>Step Completion Summary</h3></div>
+                        <div class="step-list">
+                            ${steps.map(s => `
+                                <div class="step-item ${s.done ? 'done' : ''}">
+                                    <span>${s.label}</span>
+                                    <span class="step-status ${s.done ? 'done' : 'pending'}">${s.done ? 'Completed' : 'Pending'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h3>Artifact Collection</h3></div>
+                        
+                        <label>Lovable Project Link</label>
+                        <input type="url" placeholder="https://lovable.dev/..." value="${artifacts.lovable || ''}" onchange="updateArtifact('lovable', this.value)">
+                        
+                        <label>GitHub Repository Link</label>
+                        <input type="url" placeholder="https://github.com/..." value="${artifacts.github || ''}" onchange="updateArtifact('github', this.value)">
+                        
+                        <label>Deployed URL</label>
+                        <input type="url" placeholder="https://vercel.com/..." value="${artifacts.deploy || ''}" onchange="updateArtifact('deploy', this.value)">
+                    </div>
+                `;
+
+                sideContent = `
+                    <div class="card">
+                        <label>Project Status</label>
+                        <div class="badge ${isShipped ? 'status-success' : 'status-progress'}" style="font-size: 14px; padding: 6px 12px;">
+                            ${isShipped ? 'Shipped' : 'In Progress'}
+                        </div>
+                        ${!isShipped ? '<p class="text-subtle" style="margin-top:8px; font-size:12px;">Complete all tests and fill all artifacts to ship.</p>' : ''}
+                    </div>
+
+                    <div class="card">
+                        <label>Submission</label>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="copySubmission()">Copy Final Submission</button>
+                    </div>
+                `;
             } else {
                 // Proof or Default
                 mainContent = `
