@@ -80,6 +80,9 @@
         </div>
     </div>
 
+    <!-- TOAST CONTAINER -->
+    <div id="toast" class="toast">Status updated</div>
+
     <script>
         // --- ROUTER LOGIC ---
         const routes = {
@@ -145,6 +148,8 @@
         // --- STATE MANAGEMENT ---
         let savedJobIds = JSON.parse(localStorage.getItem('savedJobs') || '[]');
         let preferences = JSON.parse(localStorage.getItem('jobTrackerPreferences') || 'null');
+        let jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
+        let statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
         
         function toggleSave(id) {
             if (savedJobIds.includes(id)) {
@@ -154,6 +159,34 @@
             }
             localStorage.setItem('savedJobs', JSON.stringify(savedJobIds));
             render(); // Re-render to update UI
+        }
+
+        function updateJobStatus(id, newStatus) {
+            // 1. Update Status Map
+            jobStatuses[id] = newStatus;
+            localStorage.setItem('jobTrackerStatus', JSON.stringify(jobStatuses));
+
+            // 2. Add to History (for Digest)
+            const job = ALL_JOBS.find(j => j.id === id);
+            if (job) {
+                statusHistory.unshift({
+                    title: job.title,
+                    company: job.company,
+                    status: newStatus,
+                    date: new Date().toISOString()
+                });
+                // Keep history manageable (last 50)
+                if (statusHistory.length > 50) statusHistory.pop();
+                localStorage.setItem('jobTrackerHistory', JSON.stringify(statusHistory));
+            }
+
+            // 3. UI Feedback
+            showToast(`Status updated: ${newStatus}`);
+            
+            // 4. Re-render to update badge colors/filters
+            // We use a slight timeout or direct DOM update to avoid full re-render flicker if possible,
+            // but for this architecture, render() is safest.
+            render();
         }
 
         function savePreferences() {
@@ -209,6 +242,15 @@
             if (score >= 60) return 'badge-score-med';
             if (score >= 40) return 'badge-score-neutral';
             return 'badge-score-low';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
         // --- DIGEST LOGIC ---
@@ -322,6 +364,13 @@
             const isSaved = savedJobIds.includes(job.id);
             const isNew = job.postedDaysAgo === 0;
             const score = calculateMatchScore(job);
+            const status = jobStatuses[job.id] || 'Not Applied';
+            
+            const statusClass = 
+                status === 'Applied' ? 'applied' :
+                status === 'Rejected' ? 'rejected' :
+                status === 'Selected' ? 'selected' :
+                'not-applied';
             
             return `
                 <div class="card job-card">
@@ -344,6 +393,12 @@
                     </div>
 
                     <div style="display: flex; gap: var(--space-2); margin-top: var(--space-1);">
+                        <select class="status-select ${statusClass}" onchange="updateJobStatus('${job.id}', this.value)" onclick="event.stopPropagation()">
+                            <option value="Not Applied" ${status === 'Not Applied' ? 'selected' : ''}>Not Applied</option>
+                            <option value="Applied" ${status === 'Applied' ? 'selected' : ''}>Applied</option>
+                            <option value="Rejected" ${status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                            <option value="Selected" ${status === 'Selected' ? 'selected' : ''}>Selected</option>
+                        </select>
                         <button class="btn btn-secondary btn-sm" onclick="openModal('${job.id}')">View Details</button>
                         <a href="${job.applyUrl}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Apply</a>
                         <button class="btn btn-secondary btn-sm" onclick="toggleSave('${job.id}')" style="${isSaved ? 'border-color: var(--c-accent); color: var(--c-accent);' : ''}">${isSaved ? 'Saved' : 'Save'}</button>
@@ -357,6 +412,8 @@
             let path = window.location.hash.slice(1) || '/';
             // Removed default redirect to dashboard
             preferences = JSON.parse(localStorage.getItem('jobTrackerPreferences') || 'null');
+            jobStatuses = JSON.parse(localStorage.getItem('jobTrackerStatus') || '{}');
+            statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
 
             // 2. Resolve Title
             const title = routes[path] || 'Not Found';
@@ -483,6 +540,13 @@
                             <option value="">Source</option>
                             ${SOURCES.map(s => `<option>${s}</option>`).join('')}
                         </select>
+                        <select id="filter-status">
+                            <option value="">All Statuses</option>
+                            <option value="Not Applied">Not Applied</option>
+                            <option value="Applied">Applied</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Selected">Selected</option>
+                        </select>
                         <select id="filter-sort">
                             <option value="newest">Newest First</option>
                             <option value="salary">Salary High-Low</option>
@@ -584,6 +648,23 @@
                         `).join('');
 
                     mainContent = `
+                        <!-- STATUS UPDATES SECTION -->
+                        ${statusHistory.length > 0 ? `
+                        <div style="margin-bottom: var(--space-5);">
+                            <h2 style="font-size: 18px; margin-bottom: var(--space-2);">Recent Status Updates</h2>
+                            <div class="card" style="padding: 0; overflow: hidden;">
+                                ${statusHistory.slice(0, 3).map(h => `
+                                    <div style="padding: 12px 16px; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; font-size: 14px;">${h.title}</div>
+                                            <div class="text-subtle" style="font-size: 12px;">${h.company} • ${new Date(h.date).toLocaleDateString()}</div>
+                                        </div>
+                                        <div class="badge" style="font-size: 10px;">${h.status}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>` : ''}
+
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
                             <h1>Daily Digest</h1>
                             <div class="badge status-success">Generated</div>
@@ -659,7 +740,7 @@
 
             // --- FILTER LOGIC (Event Delegation) ---
             document.addEventListener('change', (e) => {
-                if(e.target.id === 'filter-search' || e.target.tagName === 'SELECT' || e.target.id === 'filter-match-toggle') {
+                if(e.target.id === 'filter-search' || e.target.tagName === 'SELECT' || e.target.id === 'filter-match-toggle' || e.target.classList.contains('status-select')) {
                     updateJobList();
                 }
             });
@@ -677,6 +758,7 @@
                     const mode = document.getElementById('filter-mode')?.value || '';
                     const source = document.getElementById('filter-source')?.value || '';
                     const sort = document.getElementById('filter-sort')?.value || 'newest';
+                    const statusFilter = document.getElementById('filter-status')?.value || '';
                     const onlyMatches = document.getElementById('filter-match-toggle')?.checked || false;
                     
                     let filtered = ALL_JOBS.map(job => ({...job, score: calculateMatchScore(job)})).filter(job => {
@@ -685,9 +767,11 @@
                         const matchesExp = exp ? job.experience === exp : true;
                         const matchesMode = mode ? job.mode === mode : true;
                         const matchesSource = source ? job.source === source : true;
+                        const currentStatus = jobStatuses[job.id] || 'Not Applied';
+                        const matchesStatus = statusFilter ? currentStatus === statusFilter : true;
                         const matchesScore = onlyMatches && preferences ? job.score >= preferences.minMatchScore : true;
                         
-                        return matchesSearch && matchesLoc && matchesExp && matchesMode && matchesSource && matchesScore;
+                        return matchesSearch && matchesLoc && matchesExp && matchesMode && matchesSource && matchesStatus && matchesScore;
                     });
 
                     // Sorting
