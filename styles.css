@@ -224,9 +224,8 @@ label {
   font-size: 14px;
   border-bottom: 2px solid transparent;
   transition: var(--transition-std);
-  padding: 0 4px;
+  padding: 0 var(--space-1);
   height: 100%;
-  display: flex; /* Ensure flex behavior for centering */
 }
 
 .nav-item:hover {
