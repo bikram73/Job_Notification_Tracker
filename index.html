@@ -21,96 +21,29 @@
             <div style="font-family: var(--font-serif); font-weight: 700; font-size: 18px;">
                 Job Notification Tracker
             </div>
-            <div class="text-subtle" style="font-weight: 500;">
-                Step 2 <span style="opacity:0.4">/</span> 5
-            </div>
-            <div class="badge status-progress">In Progress</div>
+            
+            <!-- Desktop Nav -->
+            <nav class="nav-links" id="nav-links">
+                <a href="#/dashboard" class="nav-item" data-link>Dashboard</a>
+                <a href="#/saved" class="nav-item" data-link>Saved</a>
+                <a href="#/digest" class="nav-item" data-link>Digest</a>
+                <a href="#/settings" class="nav-item" data-link>Settings</a>
+                <a href="#/proof" class="nav-item" data-link>Proof</a>
+            </nav>
+
+            <!-- Mobile Toggle -->
+            <button class="mobile-toggle" id="mobile-toggle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
         </header>
 
         <!-- 2. MAIN STAGE (Split View) -->
-        <div class="main-stage">
-            
-            <!-- PRIMARY WORKSPACE (70%) -->
-            <main class="workspace">
-                <!-- Context Header -->
-                <div style="margin-bottom: var(--space-5);">
-                    <h1>Configure Notification Logic</h1>
-                    <p class="text-subtle">Define the rules for when a job alert should be triggered based on keywords and salary ranges.</p>
-                </div>
-
-                <!-- Product Interaction Area -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Keyword Filters</h3>
-                    </div>
-                    
-                    <div style="display: flex; gap: var(--space-2); align-items: flex-end; margin-bottom: var(--space-3);">
-                        <div style="flex-grow: 1;">
-                            <label>Include Keywords</label>
-                            <input type="text" placeholder="e.g. 'Senior Engineer', 'Remote'" style="margin-bottom: 0;">
-                        </div>
-                        <div>
-                            <button class="btn btn-primary">Add Rule</button>
-                        </div>
-                    </div>
-
-                    <!-- Empty State Example -->
-                    <div style="padding: var(--space-5); text-align: center; border: 1px dashed var(--c-border); border-radius: 4px; background: var(--c-bg-subtle);">
-                        <p class="text-subtle" style="margin: 0;">No active rules yet.</p>
-                        <button class="btn btn-secondary btn-sm" style="margin-top: var(--space-2);">Load Templates</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Salary Threshold</h3>
-                    </div>
-                    <div style="display: flex; gap: var(--space-3);">
-                        <div style="flex: 1;">
-                            <label>Minimum (USD)</label>
-                            <input type="text" value="120,000">
-                        </div>
-                        <div style="flex: 1;">
-                            <label>Currency</label>
-                            <select>
-                                <option>USD ($)</option>
-                                <option>EUR (€)</option>
-                                <option>GBP (£)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- SECONDARY PANEL (30%) -->
-            <aside class="secondary-panel">
-                <!-- Step Explanation -->
-                <div>
-                    <h3>Guidance</h3>
-                    <p class="text-subtle" style="font-size: 14px; line-height: 1.5;">
-                        Be specific with your keywords to avoid noise. Use boolean logic (AND/OR) if necessary to refine results.
-                    </p>
-                </div>
-
-                <!-- Copyable Prompt Box -->
-                <div class="card" style="background: var(--c-bg); border: none;">
-                    <label>AI Prompt Helper</label>
-                    <div class="text-mono" style="color: var(--c-text); margin-bottom: var(--space-2); font-size: 12px; background: #fff; padding: 8px; border: 1px solid var(--c-border); border-radius: 4px;">
-                        Generate a regex pattern for "Senior Frontend" excluding "Manager" roles.
-                    </div>
-                    <button class="btn btn-secondary btn-sm" style="width: 100%;">Copy Prompt</button>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-2);">
-                    <button class="btn btn-secondary">Build in Lovable</button>
-                    <div style="display: flex; gap: var(--space-2);">
-                        <button class="btn btn-secondary" style="flex: 1; color: var(--c-success); border-color: var(--c-border);">It Worked</button>
-                        <button class="btn btn-secondary" style="flex: 1; color: var(--c-warning); border-color: var(--c-border);">Error</button>
-                    </div>
-                    <button class="btn btn-secondary" style="border-style: dashed;">+ Add Screenshot</button>
-                </div>
-            </aside>
+        <div class="main-stage" id="app-root">
+            <!-- Dynamic Content Injected Here -->
         </div>
 
         <!-- 3. PROOF FOOTER -->
@@ -135,5 +68,69 @@
 
     </div>
 
+    <script>
+        // --- ROUTER LOGIC ---
+        const routes = {
+            '/': 'Dashboard',
+            '/dashboard': 'Dashboard',
+            '/saved': 'Saved Jobs',
+            '/digest': 'Daily Digest',
+            '/settings': 'Settings',
+            '/proof': 'Proof & Status'
+        };
+
+        const appRoot = document.getElementById('app-root');
+        const navLinks = document.querySelectorAll('.nav-item');
+        const mobileToggle = document.getElementById('mobile-toggle');
+        const navContainer = document.getElementById('nav-links');
+
+        function render() {
+            // 1. Get Path
+            let path = window.location.hash.slice(1) || '/';
+            if (path === '/') path = '/dashboard'; // Default redirect
+
+            // 2. Resolve Title
+            const title = routes[path] || 'Not Found';
+
+            // 3. Update UI
+            appRoot.innerHTML = `
+                <main class="workspace">
+                    <h1>${title}</h1>
+                    <p class="text-subtle">This section will be built in the next step.</p>
+                    
+                    <div class="card" style="margin-top: var(--space-5); height: 240px; display: flex; align-items: center; justify-content: center; background: var(--c-bg-subtle); border-style: dashed;">
+                        <span class="text-subtle">Placeholder Content for ${title}</span>
+                    </div>
+                </main>
+                <aside class="secondary-panel">
+                    <div class="card" style="background: var(--c-bg); border: none; opacity: 0.6;">
+                        <label>Context</label>
+                        <p class="text-subtle" style="font-size: 13px;">Tools and settings for ${title} will appear here.</p>
+                    </div>
+                </aside>
+            `;
+
+            // 4. Update Active Nav
+            navLinks.forEach(link => {
+                const linkPath = link.getAttribute('href').slice(1);
+                if (path === linkPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Close mobile menu on navigate
+            navContainer.classList.remove('open');
+        }
+
+        // Event Listeners
+        window.addEventListener('hashchange', render);
+        window.addEventListener('load', render);
+        
+        mobileToggle.addEventListener('click', () => {
+            navContainer.classList.toggle('open');
+        });
+    </script>
 </body>
 </html>
