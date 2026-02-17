@@ -18,29 +18,41 @@
         
         <!-- 1. TOP BAR -->
         <header class="top-bar">
+            <!-- Left: Project Name -->
             <a href="#/" style="text-decoration: none; color: var(--c-text);">
                 <div style="font-family: var(--font-serif); font-weight: 700; font-size: 18px;">
                     Job Notification Tracker
                 </div>
             </a>
             
-            <!-- Desktop Nav -->
-            <nav class="nav-links" id="nav-links">
-                <a href="#/dashboard" class="nav-item" data-link>Dashboard</a>
-                <a href="#/saved" class="nav-item" data-link>Saved</a>
-                <a href="#/digest" class="nav-item" data-link>Digest</a>
-                <a href="#/settings" class="nav-item" data-link>Settings</a>
-                <a href="#/jt/proof" class="nav-item" data-link>Proof</a>
-            </nav>
+            <!-- Center: Progress Indicator -->
+            <div class="progress-indicator" id="progress-indicator">
+                <span class="text-subtle" style="font-size: 12px;">Step 9 / 9</span>
+            </div>
+            
+            <!-- Right: Navigation + Status Badge + Mobile Toggle -->
+            <div class="top-bar-right">
+                <!-- Desktop Nav -->
+                <nav class="nav-links" id="nav-links">
+                    <a href="#/dashboard" class="nav-item" data-link>Dashboard</a>
+                    <a href="#/saved" class="nav-item" data-link>Saved</a>
+                    <a href="#/digest" class="nav-item" data-link>Digest</a>
+                    <a href="#/settings" class="nav-item" data-link>Settings</a>
+                    <a href="#/jt/proof" class="nav-item" data-link>Proof</a>
+                </nav>
 
-            <!-- Mobile Toggle -->
-            <button class="mobile-toggle" id="mobile-toggle">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
+                <!-- Status Badge -->
+                <div class="badge" id="top-status-badge">Not Started</div>
+
+                <!-- Mobile Toggle -->
+                <button class="mobile-toggle" id="mobile-toggle">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- 2. MAIN STAGE (Split View) -->
@@ -50,16 +62,16 @@
 
         <!-- 3. PROOF FOOTER -->
         <footer class="proof-footer">
-            <div class="checklist-item checked" onclick="this.classList.toggle('checked')">
+            <div class="checklist-item" id="footer-ui" onclick="toggleFooterCheck('ui')">
                 <span class="checklist-box"></span> UI Built
             </div>
-            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+            <div class="checklist-item" id="footer-logic" onclick="toggleFooterCheck('logic')">
                 <span class="checklist-box"></span> Logic Working
             </div>
-            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+            <div class="checklist-item" id="footer-test" onclick="toggleFooterCheck('test')">
                 <span class="checklist-box"></span> Test Passed
             </div>
-            <div class="checklist-item" onclick="this.classList.toggle('checked')">
+            <div class="checklist-item" id="footer-deploy" onclick="toggleFooterCheck('deploy')">
                 <span class="checklist-box"></span> Deployed
             </div>
             
@@ -138,7 +150,7 @@
                     source: SOURCES[Math.floor(Math.random() * SOURCES.length)],
                     postedDaysAgo: daysAgo,
                     salaryRange: SALARIES[Math.floor(Math.random() * SALARIES.length)],
-                    applyUrl: "#",
+                    applyUrl: `javascript:alert('DEMO: This would redirect to ${company} careers page for ${role} position. In a real app, this would be: https://careers.${company.toLowerCase().replace(/\\s+/g, '')}.com/jobs/${i + 1000}')`,
                     description: `We are looking for a ${role} to join our team at ${company}. You will work on cutting-edge technologies and contribute to scalable systems. This is a great opportunity for someone with ${EXP[Math.floor(Math.random() * EXP.length)]} experience.`
                 });
             }
@@ -155,6 +167,26 @@
         let statusHistory = JSON.parse(localStorage.getItem('jobTrackerHistory') || '[]');
         let testStatus = JSON.parse(localStorage.getItem('jobTrackerTestStatus') || '{}');
         let artifacts = JSON.parse(localStorage.getItem('jobTrackerArtifacts') || '{"lovable":"","github":"","deploy":""}');
+        let footerChecks = JSON.parse(localStorage.getItem('jobTrackerFooterChecks') || '{"ui":true,"logic":false,"test":false,"deploy":false}');
+        
+        function toggleFooterCheck(type) {
+            footerChecks[type] = !footerChecks[type];
+            localStorage.setItem('jobTrackerFooterChecks', JSON.stringify(footerChecks));
+            updateFooterUI();
+        }
+
+        function updateFooterUI() {
+            Object.keys(footerChecks).forEach(key => {
+                const element = document.getElementById(`footer-${key}`);
+                if (element) {
+                    if (footerChecks[key]) {
+                        element.classList.add('checked');
+                    } else {
+                        element.classList.remove('checked');
+                    }
+                }
+            });
+        }
         
         function toggleSave(id) {
             if (savedJobIds.includes(id)) {
@@ -163,7 +195,77 @@
                 savedJobIds.push(id);
             }
             localStorage.setItem('savedJobs', JSON.stringify(savedJobIds));
-            render(); // Re-render to update UI
+            
+            // Update only the specific button instead of full re-render
+            updateSaveButtonUI(id);
+        }
+
+        function updateSaveButtonUI(id) {
+            // Find all save buttons for this job and update them
+            const saveButtons = document.querySelectorAll(`[onclick*="toggleSave('${id}')"]`);
+            const isSaved = savedJobIds.includes(id);
+            
+            saveButtons.forEach(button => {
+                if (isSaved) {
+                    button.style.borderColor = 'var(--c-accent)';
+                    button.style.color = 'var(--c-accent)';
+                    button.innerText = 'Saved';
+                } else {
+                    button.style.borderColor = '';
+                    button.style.color = '';
+                    button.innerText = 'Save';
+                }
+            });
+        }
+
+        function applyToJob(id) {
+            // 1. Set status to Applied (without full re-render)
+            jobStatuses[id] = 'Applied';
+            localStorage.setItem('jobTrackerStatus', JSON.stringify(jobStatuses));
+            
+            // 2. Add to saved jobs if not already saved
+            if (!savedJobIds.includes(id)) {
+                savedJobIds.push(id);
+                localStorage.setItem('savedJobs', JSON.stringify(savedJobIds));
+            }
+            
+            // 3. Add to history
+            const job = ALL_JOBS.find(j => j.id === id);
+            if (job) {
+                statusHistory.unshift({
+                    title: job.title,
+                    company: job.company,
+                    status: 'Applied',
+                    date: new Date().toISOString()
+                });
+                if (statusHistory.length > 50) statusHistory.pop();
+                localStorage.setItem('jobTrackerHistory', JSON.stringify(statusHistory));
+            }
+            
+            // 4. Update UI elements without full re-render
+            updateJobStatusUI(id, 'Applied');
+            updateSaveButtonUI(id);
+            
+            // 5. Show success message
+            showToast(`Applied to ${job ? job.title + ' at ' + job.company : 'job'} and saved!`);
+        }
+
+        function updateJobStatusUI(id, newStatus) {
+            // Find and update status dropdowns for this job
+            const statusSelects = document.querySelectorAll(`[onchange*="updateJobStatus('${id}',"]`);
+            
+            statusSelects.forEach(select => {
+                select.value = newStatus;
+                
+                // Update the CSS class based on status
+                select.className = select.className.replace(/\b(applied|rejected|selected|not-applied)\b/g, '');
+                const statusClass = 
+                    newStatus === 'Applied' ? 'applied' :
+                    newStatus === 'Rejected' ? 'rejected' :
+                    newStatus === 'Selected' ? 'selected' :
+                    'not-applied';
+                select.classList.add('status-select', statusClass);
+            });
         }
 
         function updateJobStatus(id, newStatus) {
@@ -185,13 +287,11 @@
                 localStorage.setItem('jobTrackerHistory', JSON.stringify(statusHistory));
             }
 
-            // 3. UI Feedback
+            // 3. Update UI without full re-render
+            updateJobStatusUI(id, newStatus);
+
+            // 4. UI Feedback
             showToast(`Status updated: ${newStatus}`);
-            
-            // 4. Re-render to update badge colors/filters
-            // We use a slight timeout or direct DOM update to avoid full re-render flicker if possible,
-            // but for this architecture, render() is safest.
-            render();
         }
 
         // --- TEST CHECKLIST LOGIC ---
@@ -270,6 +370,15 @@ Core Features:
             
             alert('Preferences saved! Dashboard will now reflect your match scores.');
             window.location.hash = '#/dashboard';
+        }
+
+        function clearPreferences() {
+            if(confirm('Are you sure you want to clear all preferences? This will reset your match scoring.')) {
+                preferences = null;
+                localStorage.removeItem('jobTrackerPreferences');
+                alert('Preferences cleared. You will see the banner on the dashboard.');
+                window.location.hash = '#/dashboard';
+            }
         }
 
         function calculateMatchScore(job) {
@@ -412,7 +521,7 @@ Core Features:
                     <p>${job.description}</p>
                 </div>
 
-                <a href="${job.applyUrl}" target="_blank" class="btn btn-primary" style="width: 100%;">Apply Now</a>
+                <button class="btn btn-primary" style="width: 100%;" onclick="applyToJob('${job.id}'); closeModal();">Apply Now</button>
             `;
             
             modal.classList.add('open');
@@ -463,7 +572,7 @@ Core Features:
                             <option value="Selected" ${status === 'Selected' ? 'selected' : ''}>Selected</option>
                         </select>
                         <button class="btn btn-secondary btn-sm" onclick="openModal('${job.id}')">View Details</button>
-                        <a href="${job.applyUrl}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">Apply</a>
+                        <button class="btn btn-secondary btn-sm" onclick="applyToJob('${job.id}')">Apply</button>
                         <button class="btn btn-secondary btn-sm" onclick="toggleSave('${job.id}')" style="${isSaved ? 'border-color: var(--c-accent); color: var(--c-accent);' : ''}">${isSaved ? 'Saved' : 'Save'}</button>
                     </div>
                 </div>
@@ -493,22 +602,24 @@ Core Features:
             const allArtifactsFilled = artifacts.lovable && artifacts.github && artifacts.deploy;
             const isShipped = allTestsPassed && allArtifactsFilled;
 
-            // Update Top Bar Badge (if exists, or inject it)
-            // We need to find the badge in the header. It doesn't have an ID in the original HTML, 
-            // so we'll select it by class or structure.
-            const headerBadge = document.querySelector('.top-bar .badge');
-            if (headerBadge) {
+            // Update Top Bar Badge
+            const topStatusBadge = document.getElementById('top-status-badge');
+            if (topStatusBadge) {
                 if (isShipped) {
-                    headerBadge.className = 'badge status-success';
-                    headerBadge.innerText = 'Shipped';
-                } else if (testsPassedCount > 0 || Object.values(artifacts).some(v => v)) {
-                    headerBadge.className = 'badge status-progress';
-                    headerBadge.innerText = 'In Progress';
+                    topStatusBadge.className = 'badge status-success';
+                    topStatusBadge.innerText = 'Shipped';
+                } else if (testsPassedCount > 0 || Object.values(artifacts).some(v => v) || preferences) {
+                    topStatusBadge.className = 'badge status-progress';
+                    topStatusBadge.innerText = 'In Progress';
                 } else {
-                    headerBadge.className = 'badge';
-                    headerBadge.innerText = 'Not Started';
+                    topStatusBadge.className = 'badge';
+                    topStatusBadge.innerText = 'Not Started';
                 }
             }
+
+            // Update Footer Checklist
+            footerChecks = JSON.parse(localStorage.getItem('jobTrackerFooterChecks') || '{"ui":true,"logic":false,"test":false,"deploy":false}');
+            updateFooterUI();
 
             if (path === '/') {
                 mainContent = `
@@ -583,6 +694,7 @@ Core Features:
                         <input type="range" id="pref-score" min="0" max="100" value="${preferences?.minMatchScore || 40}" oninput="document.getElementById('score-val').innerText = this.value">
                         
                         <button class="btn btn-primary" style="width: 100%; margin-top: var(--space-3);" onclick="savePreferences()">Save Preferences</button>
+                        ${preferences ? '<button class="btn btn-secondary" style="width: 100%; margin-top: var(--space-2);" onclick="clearPreferences()">Clear Preferences</button>' : ''}
                     </div>
                 `;
                 sideContent = `
@@ -594,21 +706,25 @@ Core Features:
                     </div>
                 `;
             } else if (path === '/dashboard') {
+                // Check if this is the initial state (no preferences set and no jobs should be shown yet)
+                const shouldShowJobs = preferences !== null;
+                
                 mainContent = `
                     ${!preferences ? `
-                    <div class="card" style="background: var(--c-accent); color: white; border: none; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="card" style="background: var(--c-accent); color: white; border: none; display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
                         <div>
-                            <h3 style="color: white; margin-bottom: 4px;">Set your preferences</h3>
-                            <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 14px;">Activate intelligent matching to see scores.</p>
+                            <h3 style="color: white; margin-bottom: 4px;">Set your preferences to activate intelligent matching</h3>
+                            <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 14px;">Configure your criteria to see match scores and personalized results.</p>
                         </div>
                         <a href="#/settings" class="btn" style="background: white; color: var(--c-accent); height: 36px; font-size: 13px;">Configure</a>
                     </div>` : ''}
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-2);">
                         <h1>Dashboard</h1>
-                        <div class="text-subtle">${ALL_JOBS.length} Jobs Found</div>
+                        <div class="text-subtle">${shouldShowJobs ? ALL_JOBS.length + ' Jobs Found' : 'No jobs yet'}</div>
                     </div>
                     
+                    ${shouldShowJobs ? `
                     <!-- FILTER BAR -->
                     <div class="filter-bar">
                         <input type="text" placeholder="Search role or company..." id="filter-search">
@@ -642,14 +758,13 @@ Core Features:
                         </select>
                     </div>
                     
-                    ${preferences ? `
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: var(--space-3); padding: 0 var(--space-1);">
                         <label class="toggle-switch">
                             <input type="checkbox" id="filter-match-toggle">
                             <span class="slider"></span>
                         </label>
                         <span style="font-size: 14px; font-weight: 500;">Show only jobs above my threshold (${preferences.minMatchScore})</span>
-                    </div>` : ''}
+                    </div>
 
                     <div id="job-list-container">
                         ${ALL_JOBS.map(job => createJobCard(job)).join('')}
@@ -657,11 +772,18 @@ Core Features:
                     
                     <!-- Load More (Visual Only) -->
                     <button class="btn btn-secondary" style="width: 100%; margin-top: var(--space-3);">Load More Jobs</button>
+                    ` : `
+                    <div class="card" style="padding: var(--space-5); text-align: center; background: var(--c-bg-subtle);">
+                        <h3 style="margin-bottom: var(--space-2);">No jobs yet</h3>
+                        <p class="text-subtle">In the next step, you will load a realistic dataset.</p>
+                        <a href="#/settings" class="btn btn-primary" style="margin-top: var(--space-2);">Set Preferences First</a>
+                    </div>
+                    `}
                 `;
                 sideContent = `
                     <div class="card">
                         <label>Status</label>
-                        <div class="badge status-progress" style="display: inline-block;">Waiting for Data</div>
+                        <div class="badge status-progress" style="display: inline-block;">${shouldShowJobs ? 'Active' : 'Waiting for Data'}</div>
                     </div>
                 `;
             } else if (path === '/saved') {
@@ -731,7 +853,7 @@ Core Features:
                                 </div>
                                 <div style="font-size: 14px; color: var(--c-text); margin-bottom: 4px;">${job.company} • ${job.location}</div>
                                 <div style="font-size: 13px; color: var(--c-text-subtle); margin-bottom: 8px;">${job.experience} • ${job.salaryRange}</div>
-                                <a href="${job.applyUrl}" target="_blank" style="font-size: 13px; color: var(--c-accent); text-decoration: none; font-weight: 500;">Apply Now &rarr;</a>
+                                <button onclick="applyToJob('${job.id}')" style="font-size: 13px; color: var(--c-accent); background: none; border: none; cursor: pointer; font-weight: 500; text-decoration: underline;">Apply Now &rarr;</button>
                             </div>
                         `).join('');
 
@@ -806,20 +928,31 @@ Core Features:
                         </div>
 
                         <div style="margin-top: var(--space-5); text-align: center;">
-                            ${isComplete ? `<a href="#/jt/08-ship" class="btn btn-primary">Proceed to Ship &rarr;</a>` : ''}
-                            <button class="btn btn-secondary btn-sm" onclick="resetTests()" style="margin-top: var(--space-2);">Reset Test Status</button>
+                            <button class="btn btn-secondary btn-sm" onclick="resetTests()" style="margin-bottom: var(--space-2);">Reset Test Status</button>
+                            <br>
+                            ${isComplete ? `<a href="#/jt/08-ship" class="btn btn-primary">Proceed to Ship &rarr;</a>` : '<div class="text-subtle" style="font-size: 13px;">Complete all tests to unlock shipping.</div>'}
                         </div>
                     </div>
                 `;
                 sideContent = `
                     <div class="card">
-                        <label>Status</label>
+                        <label>Test Status</label>
                         <div class="badge ${isComplete ? 'status-success' : 'status-progress'}">${isComplete ? 'Ready' : 'Testing'}</div>
+                        <p class="text-subtle" style="margin-top: 8px; font-size: 12px;">
+                            ${isComplete ? 'All tests passed. Ready to ship.' : 'Complete all tests to proceed.'}
+                        </p>
+                    </div>
+                    
+                    <div class="card">
+                        <label>Navigation</label>
+                        <a href="#/jt/proof" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 8px;">Back to Proof</a>
+                        ${isComplete ? '<a href="#/jt/08-ship" class="btn btn-primary btn-sm" style="width: 100%;">Go to Ship</a>' : ''}
                     </div>
                 `;
             } else if (path === '/jt/08-ship') {
                 const passedCount = TEST_ITEMS.filter(t => testStatus[t.id]).length;
-                const isLocked = passedCount < TEST_ITEMS.length;
+                const isTestsComplete = passedCount === TEST_ITEMS.length;
+                const isLocked = !isTestsComplete;
 
                 if (isLocked) {
                     mainContent = `
@@ -827,21 +960,56 @@ Core Features:
                             <div style="font-size: 48px; margin-bottom: var(--space-2);">🔒</div>
                             <h2>Shipment Locked</h2>
                             <p class="text-subtle">You must pass all ${TEST_ITEMS.length} tests before accessing this screen.</p>
-                            <a href="#/jt/07-test" class="btn btn-primary" style="margin-top: var(--space-2);">Go to Checklist</a>
+                            <p class="text-subtle" style="margin-bottom: var(--space-3);">Current progress: ${passedCount}/${TEST_ITEMS.length} tests passed</p>
+                            <a href="#/jt/07-test" class="btn btn-primary" style="margin-top: var(--space-2);">Go to Test Checklist</a>
+                        </div>
+                    `;
+                    sideContent = `
+                        <div class="card">
+                            <label>Status</label>
+                            <div class="badge">Locked</div>
+                            <p class="text-subtle" style="margin-top: 8px; font-size: 12px;">
+                                Complete all tests to unlock.
+                            </p>
                         </div>
                     `;
                 } else {
                     mainContent = `
                         <h1>Ready to Ship</h1>
-                        <p class="text-subtle">All systems operational.</p>
+                        <p class="text-subtle">All systems operational. Project ready for deployment.</p>
+                        
+                        ${isShipped ? `<div class="shipped-message">🚀 Project 1 Shipped Successfully.</div>` : ''}
+                        
                         <div class="card" style="padding: var(--space-8); text-align: center; background: var(--c-bg-subtle);">
-                            <h2>🚀</h2>
-                            <h3>Job Notification Tracker v1.0</h3>
-                            <p class="text-subtle">Ready for deployment.</p>
+                            <div style="font-size: 48px; margin-bottom: var(--space-2);">🚀</div>
+                            <h2>Job Notification Tracker v1.0</h2>
+                            <p class="text-subtle" style="margin-bottom: var(--space-3);">
+                                All tests passed. Ready for deployment.
+                            </p>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-bottom: var(--space-3); text-align: left;">
+                                <div><strong>Tests:</strong> ${passedCount}/${TEST_ITEMS.length} ✓</div>
+                                <div><strong>Artifacts:</strong> ${allArtifactsFilled ? 'Complete ✓' : 'Pending'}</div>
+                                <div><strong>Status:</strong> ${isShipped ? 'Shipped ✓' : 'Ready'}</div>
+                                <div><strong>Version:</strong> 1.0.0</div>
+                            </div>
+                            
+                            ${!isShipped ? '<p class="text-subtle" style="font-size: 13px;">Complete artifact collection in Proof section to mark as shipped.</p>' : ''}
+                        </div>
+                    `;
+                    sideContent = `
+                        <div class="card">
+                            <label>Ship Status</label>
+                            <div class="badge ${isShipped ? 'status-success' : 'status-progress'}">${isShipped ? 'Shipped' : 'Ready'}</div>
+                        </div>
+                        
+                        <div class="card">
+                            <label>Navigation</label>
+                            <a href="#/jt/07-test" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 8px;">Back to Tests</a>
+                            <a href="#/jt/proof" class="btn btn-secondary btn-sm" style="width: 100%;">Go to Proof</a>
                         </div>
                     `;
                 }
-                sideContent = `<div class="card"><label>Version</label><div class="text-subtle">1.0.0</div></div>`;
             } else if (path === '/jt/proof' || path === '/proof') {
                 const steps = [
                     { label: 'Project Setup', done: true },
@@ -896,8 +1064,14 @@ Core Features:
                     </div>
 
                     <div class="card">
+                        <label>Testing</label>
+                        <a href="#/jt/07-test" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 8px;">System Tests</a>
+                        ${allTestsPassed ? '<a href="#/jt/08-ship" class="btn btn-primary btn-sm" style="width: 100%; margin-bottom: 8px;">Ship Project</a>' : '<div class="text-subtle" style="font-size: 12px;">Complete tests to unlock shipping</div>'}
+                    </div>
+
+                    <div class="card">
                         <label>Submission</label>
-                        <button class="btn btn-primary" style="width: 100%;" onclick="copySubmission()">Copy Final Submission</button>
+                        <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="copySubmission()">Copy Final Submission</button>
                     </div>
                 `;
             } else {
@@ -942,7 +1116,10 @@ Core Features:
 
         // Event Listeners
         window.addEventListener('hashchange', render);
-        window.addEventListener('load', render);
+        window.addEventListener('load', () => {
+            render();
+            updateFooterUI(); // Initialize footer checklist
+        });
         
         mobileToggle.addEventListener('click', () => {
             navContainer.classList.toggle('open');
